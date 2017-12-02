@@ -73,7 +73,8 @@ class Block:
                  block_hash: str,
                  transactions: List[Transaction],
                  height: int,
-                 difficulty: int,
+                 timestamp: int,
+                 difficulty: int,                 
                  nonce: str):
         '''
         blockHash: Hash of the block
@@ -83,5 +84,6 @@ class Block:
         self.block_hash = block_hash
         self.transactions = transactions
         self.height = height
+        self.timestamp = timestamp
         self.difficulty = difficulty
-        self.nonce = nonce
+        self.nonce = nonce        
