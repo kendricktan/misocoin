@@ -7,13 +7,16 @@ from misochain.hashing import sha256
 
 
 class Vin:
-    def __init__(self, txid: str, index: int):
+    def __init__(self, txid: str, index: int, signature: str):
         '''
         txid:  The transaction id               
-        index: Index of the vout in the list of transactions               
+        index: Index of the vout in the list of transactions
+        signature: signature to know that the sender actually verified
+                   the payment
         '''
         self.txid = txid
         self.index = index
+        self.signature = signature
 
 
 class Vout:
@@ -37,35 +40,37 @@ class Coinbase:
     vins of the transaction in the same block
     '''
 
-    def __init__(self, txid: str, vins: [Vin], vouts: [Vout], rewardAddress: str, rewardAmount: int):
+    def __init__(self, txid: str, vins: [Vin], vouts: [Vout], reward_address: str, reward_amount: int):
         '''
         txid:          Txid of the Coinbase transaction
         vins:          All vins inside the block
         vouts:         All vouts inside the block
-        rewardAddress: Address of miner who found the solution to block
-        rewardAmount:  Amount rewarded
+        reward_address: Address of miner who found the solution to block
+        reward_amount:  Amount rewarded
         '''
         self.txid = txid
         self.vins = vins
         self.vouts = vouts
-        self.rewardAddress = rewardAddress
-        self.rewardAmount = rewardAmount
+        self.reward_address = reward_address
+        self.reward_amount = reward_amount
 
 
 class Transaction:
-    def __init__(self, vins: List[Union[Coinbase, Vin]], vouts: List[Vout]):
+    def __init__(self, txid: str, vins: List[Union[Coinbase, Vin]], vouts: List[Vout]):
         '''
+        txid:  Transaction id of the hashes
         vins:  List of inputs (where we our money is supplied from)
                Note: First item in array will always be a coinbase
         vouts: List of outputs (where our supplied money is going to go)
         '''
+        self.txid = txid
         self.vins = vins
         self.vouts = vouts
 
 
 class Block:
     def __init__(self,
-                 blockHash: str,
+                 block_hash: str,
                  transactions: List[Transaction],
                  height: int,
                  difficulty: int,
@@ -75,42 +80,8 @@ class Block:
         transactions: Transactions in our blockchain
         height:  Current block height
         '''
-        self.blockHash = blockHash
+        self.block_hash = block_hash
         self.transactions = transactions
         self.height = height
         self.difficulty = difficulty
         self.nonce = nonce
-
-
-def get_hash(vins: List[Vin],
-            vouts: List[Vout],
-            rewardAddress: str = '',
-            rewardAmount: Union[str, int] = '',
-            height: Union[str, int] = '',
-            difficulty: Union[str, int] = '',
-            nonce: Union[str, int] = '') -> str:
-    '''
-    Gets the hash given the inputs.
-
-    Union type of str is only there so I can supply
-    it an empty string by default
-
-    Params:
-        vins:           Total amount of vins
-        vouts:          Total amonut of vouts
-        rewardAddress:  Reward address of coinbase
-                        (Only for Coinbase/Block type)
-        rewardAmount:   Reward amout of coinbase
-                        (Only for Coinbase/Block type)
-        height:         Block height (only for Block type)
-        difficulty:     Block difficulty (only for Block type)
-        nonce:          Block nonce (only for Block type)
-    '''
-    # Use the of all pass vins, vouts,
-    vins_str = reduce(lambda x, y: x + y.txid + str(getattr(y, 'index', '')), vins, '')
-    vouts_str = reduce(lambda x, y: x + y.address + str(y.value), vouts, '')
-    rewards_str = rewardAddress + str(rewardAmount)
-    block_str = str(height) + str(difficulty) + str(nonce)
-
-    # Order was arbitrarily chosen
-    return sha256(vins_str + rewards_str + block_str + vouts_str)
