@@ -25,6 +25,14 @@ class Vin:
             self.txid, self.index, self.pub_key, self.signature
         )
 
+    def toJSON(self):
+        return {
+            'txid': self.txid,
+            'index': self.index,
+            'pub_key': self.pub_key,
+            'signature': self.signature
+        }
+
 
 class Vout:
     def __init__(self, address: str, amount: int):
@@ -37,6 +45,12 @@ class Vout:
 
     def __str__(self):
         return '\t\t[address: {}, amount: {}]'.format(self.address, self.amount)
+
+    def toJSON(self):
+        return {
+            'address': self.address,
+            'amount': self.amount
+        }
 
 
 class Coinbase:
@@ -72,6 +86,13 @@ class Coinbase:
             self.txid, self.reward_address, self.reward_amount
         )
 
+    def toJSON(self):
+        return {
+            'txid': self.txid,
+            'reward_address': self.reward_address,
+            'reward_amount': self.reward_amount
+        }
+
 
 class Transaction:
     def __init__(self, vins: List[Vin], vouts: List[Union[Vout, Coinbase]]):
@@ -92,6 +113,16 @@ class Transaction:
         vouts_str = reduce(lambda x, y: x + '\t' +
                            str(y) + '\n', self.vouts, '')
         return 'txid: {}\n\t[Vins]\n{}\n\t[Vouts]\n{}'.format(self.txid, vins_str, vouts_str)
+
+    def toJSON(self):
+        vins_json = reduce(lambda x, y: x + [y.toJSON()], self.vins, [])
+        vouts_json = reduce(lambda x, y: x + [y.toJSON()], self.vouts, [])
+
+        return {
+            'txid': self.txid,
+            'vins': vins_json,
+            'vouts': vouts_json,
+        }
 
 
 class Block:
@@ -159,3 +190,16 @@ class Block:
                 '[Transactions]\n{}').format(
             self.block_hash, self.prev_block_hash, self.height,
             self.difficulty, self.nonce, self.timestamp, self.coinbase, txs_str)
+
+    def toJSON(self):
+        transactions = list(map(lambda x: x.toJSON(), self.transactions))
+        return {
+            'block_hash': self.block_hash,
+            'prev_block_hash': self.prev_block_hash,
+            'height': self.height,
+            'difficulty': self.difficulty,
+            'nonce': self.nonce,
+            'timestamp': self.timestamp,
+            'coinbase': self.coinbase.toJSON(),
+            'transactions': transactions
+        }

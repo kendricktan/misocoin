@@ -110,7 +110,7 @@ def add_tx_to_block(tx: Transaction,
 
     Updates and maintains the global cache of utxos. This is also used
     to check for double spending
-    '''
+    '''    
     # Make copy of object
     _block = copy.deepcopy(block)
     _tx = copy.deepcopy(tx)

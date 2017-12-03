@@ -1,1 +1,2 @@
 fastecdsa===1.4.3
+json-rpc==1.10.8
