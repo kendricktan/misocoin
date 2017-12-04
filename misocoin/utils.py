@@ -9,11 +9,12 @@ from misocoin.struct import Block, Transaction, Vin, Vout, Coinbase
 from misocoin.hashing import sha256, get_hash
 
 
-def mine_block(block: Block, address: str, utxos: Dict) -> Tuple[Block, Dict]:
+def mine_block(block: Block, address: str, txs: Dict, utxos: Dict) -> Tuple[Block, Dict, Dict]:
     '''
     Mines a block and returns its mined hash
     '''
     _block = copy.deepcopy(block)
+    _txs = copy.deepcopy(txs)
     _utxos = copy.deepcopy(utxos)
 
     # Oh wow state mutation :(
@@ -31,11 +32,10 @@ def mine_block(block: Block, address: str, utxos: Dict) -> Tuple[Block, Dict]:
             # With 15 misocoin + fees in the block
             coinbase = Coinbase(
                 _block.prev_block_hash, address, reward_amount
-            )
-
+            )            
             _block.coinbase = coinbase
 
-            # Add coinbase to utxo
+            # Add coinbase to utxo and txs
             # Coinbase's vout will only contain
             # 1 item
             _utxos[coinbase.txid] = {}
@@ -45,7 +45,10 @@ def mine_block(block: Block, address: str, utxos: Dict) -> Tuple[Block, Dict]:
                 'spent': None
             }
 
-            return _block, _utxos
+            _txs[coinbase.txid] = coinbase
+                          
+
+            return _block, _txs, _utxos
 
 
 def create_raw_tx(vins: List[Vin], vouts: List[Vout]) -> Transaction:
@@ -95,25 +98,41 @@ def get_fees(tx: Transaction, utxos: Dict) -> int:
     '''
     Gets the fees inside a transaction
     '''
-    total_in = reduce(
-        lambda x, y: x + utxos[y.txid][y.index]['amount'], tx.vins, 0)
-    total_out = reduce(lambda x, y: x + y.amount, tx.vouts, 0)
-    return (total_in - total_out)
+    try:
+        total_in = reduce(
+            lambda x, y: x + utxos[y.txid][y.index]['amount'], tx.vins, 0)
+        total_out = reduce(lambda x, y: x + y.amount, tx.vouts, 0)
+        return (total_in - total_out)
+    
+    except KeyError as e:
+        raise Exception('invalid vin txid/index {}'.format(e))
+    
+    except Exception as e:
+        raise e
 
 
 def add_tx_to_block(tx: Transaction,
                     block: Block,
-                    utxos: Dict) -> Tuple[Block, Dict]:
+                    txs: Dict,
+                    utxos: Dict) -> Tuple[Block, Dict, Dict]:
     '''
     Adds the tx to the to the blockchain and broadcasts it to
     connected nodes. 
 
     Updates and maintains the global cache of utxos. This is also used
     to check for double spending
+
+    Params:
+        tx: transaction to be added to the latest block
+        block: latest block
+        txs: Global dictionary of transactions (state of all txs)
+        utxos: Global dictioanry of unspent transactions (contains
+                the state of unspent txs)
     '''    
     # Make copy of object
     _block = copy.deepcopy(block)
     _tx = copy.deepcopy(tx)
+    _txs = copy.deepcopy(txs)
     _utxos = copy.deepcopy(utxos)
 
     # Can't send more than you received
@@ -168,9 +187,12 @@ def add_tx_to_block(tx: Transaction,
         else:
             raise Exception('Transaction {} does not exist'.format(vin.txid))
 
+    # Add to global_txs
+    _txs[_tx.txid] = _tx
+
     # Wow state mutations
     _block.transactions = _block.transactions + [_tx]
-    return _block, _utxos
+    return _block, _txs, _utxos
 
 
 def print_blockchain(blockchain: List[Block]):

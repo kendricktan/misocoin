@@ -1,4 +1,6 @@
+import json
 import time
+import misocoin.utils as mutils
 
 from typing import List
 from pprint import pprint
@@ -6,7 +8,6 @@ from werkzeug.wrappers import Request, Response
 from werkzeug.serving import run_simple
 from jsonrpc import JSONRPCResponseManager, dispatcher
 
-from misocoin.utils import get_hash, mine_block, create_raw_tx, sign_tx, add_tx_to_block, print_blockchain
 from misocoin.hashing import sha256
 from misocoin.crypto import get_new_priv_key, get_pub_key
 from misocoin.struct import Vin, Vout, Coinbase, Transaction, Block
@@ -35,6 +36,15 @@ from misocoin.struct import Vin, Vout, Coinbase, Transaction, Block
 # is of structure
 # utxo[txid][index] = { 'address': address, 'amount': amount, 'spent': None or txid }
 global_utxos = {}
+
+# Tx is a dict of all transactions
+# that ever took place
+global_txs = {}
+
+# best block
+global_best_block = None
+
+# blockchain
 global_blockchain = []
 
 # Genesis block
@@ -48,54 +58,78 @@ genesis_block = Block(
     nonce=0
 )
 
-mined_block, global_utxos = mine_block(
-    genesis_block, '461ec74a3ce3ea96267c1b7d043b35004a7058f1', global_utxos
-)
 
-global_blockchain.append(mined_block)
-
-# Testing
-
-# New block to house our transactions
-new_timestamp = 1512257130
-new_block = Block(
-    transactions=[],
-    prev_block_hash=genesis_block.block_hash,
-    height=2,
-    timestamp=new_timestamp,
-    difficulty=1,
-    nonce=1
-)
-
-# New transaction
-new_tx = create_raw_tx(
-    [Vin(mined_block.coinbase.txid, 0)],
-    [
-        Vout('7b13fb41e910a1b022639f8463ce02596b8c9d4b', 5),
-        Vout('461ec74a3ce3ea96267c1b7d043b35004a7058f1', 9)
-    ]
-)
-signed_tx = sign_tx(
-    new_tx, 0, '60c8cb60c21143fffdd682f399ef3baa4b67c56a1f83a274284cfe7c57e007ed'
-)
-
-new_block, global_utxos = add_tx_to_block(signed_tx, new_block, global_utxos)
-
-mined_block, global_utxos = mine_block(
-    new_block, '7b13fb41e910a1b022639f8463ce02596b8c9d4b', global_utxos
-)
-
-global_blockchain.append(mined_block)
-
-# pprint(mined_block.toJSON())
-# print_blockchain(global_blockchain)
+@dispatcher.add_method
+def get_info():
+    return {
+        'blocks': len(global_blockchain)
+    }
 
 
 @dispatcher.add_method
-def get_block(i):
-    if (i - 1) < 0 or i > len(global_blockchain):
-        return {'error': 'Block not found'}
-    return global_blockchain[i - 1].toJSON()
+def get_best_block_hash():
+    return {
+        'hash': global_blockchain[-1].block_hash
+    }
+
+
+@dispatcher.add_method
+def get_block(i: int):
+    try:
+        i = int(i)
+        if (i - 1) > 0 and i < len(global_blockchain):
+            return global_blockchain[i - 1].toJSON()
+
+    except Exception as e:
+        return {'error': str(e)}
+    return {'error': 'Block not found'}
+
+
+@dispatcher.add_method
+def create_raw_tx(vins, vouts):
+    try:
+        vins = json.loads(vins)
+        vouts = json.loads(vouts)
+        return Transaction.fromJSON({'vins': vins, 'vouts': vouts}).toJSON()
+
+    except Exception as e:
+        return {'error': str(e)}
+
+
+@dispatcher.add_method
+def sign_raw_tx(tx: str, idx: int, pk: str):
+    try:
+        idx = int(idx)
+        tx = Transaction.fromJSON(json.loads(tx))
+        signed_tx = mutils.sign_tx(tx, idx, pk)
+        return signed_tx.toJSON()
+
+    except Exception as e:
+        return {'error': str(e)}
+
+
+@dispatcher.add_method
+def get_tx(txid: str):
+    txid = str(txid)
+    if txid in global_txs:
+        return global_txs[txid].toJSON()
+    return {'error': 'txid not found'}
+
+
+@dispatcher.add_method
+def send_raw_tx(tx: str):
+    global global_best_block, global_txs, global_utxos
+    try:
+        tx = Transaction.fromJSON(json.loads(tx))
+        global_best_block, global_txs, global_utxos = mutils.add_tx_to_block(
+            tx, global_best_block, global_txs, global_utxos
+        )
+
+        # TODO: Broadcast transaction to connected nodes
+        return {'txid': tx.txid}
+
+    except Exception as e:
+        return {'error': str(e)}
 
 
 @Request.application

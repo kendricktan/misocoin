@@ -1,4 +1,5 @@
 # Here we define the structure of our object
+import json
 
 from functools import reduce
 from typing import List, Union, Dict
@@ -21,9 +22,18 @@ class Vin:
         self.signature = ''
 
     def __str__(self):
-        return '\t\t[txid: {}, index: {}, pub_key: {}, signature: {}]'.format(
-            self.txid, self.index, self.pub_key, self.signature
-        )
+        return json.dumps(self.toJSON())
+
+    @classmethod
+    def fromJSON(cls, vin_json: Dict):        
+        if 'txid' not in vin_json or 'index' not in vin_json:
+            raise Exception('Vin missing txid/index, {}'.format(vin_json))
+
+        vin = cls(vin_json['txid'], vin_json['index'])
+        vin.pub_key = getattr(vin_json, 'pub_key', None)
+        vin.signature = getattr(vin_json, 'signature', None)
+
+        return vin
 
     def toJSON(self):
         return {
@@ -44,7 +54,14 @@ class Vout:
         self.amount = amount
 
     def __str__(self):
-        return '\t\t[address: {}, amount: {}]'.format(self.address, self.amount)
+        return json.dumps(self.toJSON())
+
+    @classmethod
+    def fromJSON(cls, vout_json: Dict):        
+        if 'address' not in vout_json or 'amount' not in vout_json:
+            raise Exception('Vout missing txid/index: {}'.format(vout_json))
+
+        return cls(vout_json['address'], vout_json['amount'])
 
     def toJSON(self):
         return {
@@ -82,8 +99,19 @@ class Coinbase:
         )
 
     def __str__(self):
-        return '\ttxid: {}\n\treward_address: {}\n\treward_amount: {}'.format(
-            self.txid, self.reward_address, self.reward_amount
+        return json.dumps(self.toJSON())
+
+    @classmethod
+    def fromJSON(cls, coinbase_json: Dict):
+        if 'prev_block_hash' not in coinbase_json or 'reward_address' not in coinbase_json \
+                or 'reward_amount' not in coinbase_json:
+            raise Exception(
+                'Coinbase missing inputs: {}'.format(coinbase_json))
+
+        return cls(
+            coinbase_json['prev_block_hash'],
+            coinbase_json['reward_address'],
+            coinbase_json['reward_amount']
         )
 
     def toJSON(self):
@@ -95,7 +123,7 @@ class Coinbase:
 
 
 class Transaction:
-    def __init__(self, vins: List[Vin], vouts: List[Union[Vout, Coinbase]]):
+    def __init__(self, vins: List[Vin], vouts: List[Vout]):
         '''
         vins:  List of inputs (where we our money is supplied from)
                Note: First item in array will always be a coinbase
@@ -109,10 +137,21 @@ class Transaction:
         return get_hash(vins=self.vins, vouts=self.vouts)
 
     def __str__(self):
-        vins_str = reduce(lambda x, y: x + '\t' + str(y) + '\n', self.vins, '')
-        vouts_str = reduce(lambda x, y: x + '\t' +
-                           str(y) + '\n', self.vouts, '')
-        return 'txid: {}\n\t[Vins]\n{}\n\t[Vouts]\n{}'.format(self.txid, vins_str, vouts_str)
+        return json.dumps(self.toJSON())
+
+    @classmethod
+    def fromJSON(cls, vins: List[Dict], vouts: List[Dict]):
+        pass
+
+    @classmethod
+    def fromJSON(cls, tx_json: Dict):        
+        if 'vins' not in tx_json or 'vouts' not in tx_json:
+            raise Exception('Transaction missing inputs: {}'.format(tx_json))
+
+        vins = list(map(Vin.fromJSON, tx_json['vins']))
+        vouts = list(map(Vout.fromJSON, tx_json['vouts']))
+
+        return cls(vins, vouts)
 
     def toJSON(self):
         vins_json = reduce(lambda x, y: x + [y.toJSON()], self.vins, [])
@@ -175,21 +214,32 @@ class Block:
         return self.block_hash[:self.difficulty] == '0' * self.difficulty
 
     def __str__(self):
-        txs_str = reduce(
-            lambda x, y: x + '\t' + str(y) + '\n',
-            self.transactions, ''
-        )
+        return json.dumps(self.toJSON())
 
-        return ('block_hash: {}\n' +
-                'prev_block_hash: {}\n' +
-                'height: {}\n' +
-                'difficulty: {}\n' +
-                'nonce: {}\n' +
-                'timestamp: {}\n' +
-                '[Coinbase]\n{}\n' +
-                '[Transactions]\n{}').format(
-            self.block_hash, self.prev_block_hash, self.height,
-            self.difficulty, self.nonce, self.timestamp, self.coinbase, txs_str)
+    @classmethod
+    def fromJSON(cls, block_json: Dict):
+        if 'block_hash' not in block_json or 'prev_block_hash' not in block_json \
+                or 'height' not in block_json or 'difficulty' not in block_json \
+                or 'nonce' not in block_json or 'timestamp' not in block_json \
+                or 'coinbase' not in block_json or 'transactions' not in block_json:
+            raise Exception('Block missing inputs: {}'.format(block_json))        
+        coinbase = None
+        transactions = list(
+            map(Transaction.fromJSON, block_json['transactions']))
+
+        if block_json['coinbase'] is not None:
+            coinbase = Coinbase.fromJSON(block_json['coinbase'])
+
+        block = cls(
+            block_json['prev_block_hash'],
+            transactions,
+            block_json['height'],
+            block_json['timestamp'],
+            block_json['difficulty'],
+            block_json['nonce']
+        )
+        block.coinbase = coinbase
+        return block
 
     def toJSON(self):
         transactions = list(map(lambda x: x.toJSON(), self.transactions))
