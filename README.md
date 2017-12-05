@@ -1,8 +1,8 @@
 <h1><p align="center">Misocoin</p></h1>
 
-<div style="text-align: center">
+<p align="center">
     <img src="https://i.imgur.com/LURNf2q.jpg"/>
-</div>
+</p>
 
 Misocoin is a _barebones_ Bitcoin-like protocol implemented in Python 3.x. It was written as a challenge for myself to see if I could implement a bitcoin clone from scratch.
 
