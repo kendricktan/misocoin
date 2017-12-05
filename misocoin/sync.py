@@ -1,6 +1,17 @@
 import requests
 import json
 
+from werkzeug.serving import WSGIRequestHandler
+
+
+class MisocoinRequestHandler(WSGIRequestHandler):
+    '''
+    Don't want verbose logging
+    '''
+
+    def log(self, type, message, *args):
+        return
+
 
 def misocoin_cli(m, args, host='localhost', port=4000):
     url = "http://{}:{}/jsonrpc".format(host, port)

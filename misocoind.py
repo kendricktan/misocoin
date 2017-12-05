@@ -17,7 +17,7 @@ from jsonrpc import JSONRPCResponseManager, dispatcher
 from misocoin.hashing import sha256
 from misocoin.crypto import get_new_priv_key, get_pub_key, get_address
 from misocoin.struct import Vin, Vout, Coinbase, Transaction, Block
-from misocoin.sync import misocoin_cli
+from misocoin.sync import misocoin_cli, MisocoinRequestHandler
 
 # Private Key to the genesis_block's output address is
 # sha256('miso is a good boy')
@@ -89,10 +89,10 @@ def add_to_blockchain(block: Block):
 
     Also updates the utxo cache and tx cache
     """
-    global global_best_block, global_txs, global_utxos
+    global global_best_block, global_txs, global_utxos, global_difficulty
 
     # If we don't have the prev block, get it from our nodes
-    if (block.height - 1) not in global_blockchain:        
+    if (block.height - 1) not in global_blockchain:
         for node in global_nodes:
             try:
                 missing_block_dict: Dict = misocoin_cli(
@@ -157,7 +157,28 @@ def add_to_blockchain(block: Block):
             except:
                 pass
 
-        print('Receive mined block: {}'.format(block.height))
+        # Auto adjust difficulty ever 10 blocks
+        # Should be around 300 seconds after 10 blocks
+        last_ten_blocks = []
+        for i in range(max(1, global_best_block.height - 10), global_best_block.height - 1):
+            if i in global_blockchain:
+                last_ten_blocks.append(global_blockchain[i])
+
+        if (len(global_blockchain) % 10 == 0):
+            lowest_timestamp = reduce(lambda x, y: min(
+                x, y.timestamp), last_ten_blocks, int(time.time()))
+            highest_timestamp = reduce(lambda x, y: max(
+                x, y.timestamp), last_ten_blocks, genesis_epoch)
+            
+            if (highest_timestamp - lowest_timestamp < 300):
+                global_difficulty = min(global_difficulty + 1, 64)
+
+            if (highest_timestamp - lowest_timestamp > 300):
+                global_difficulty = max(global_difficulty - 1, 1)
+
+            print('[UPDATE] Difficulty adjusted to {}'.format(global_difficulty))
+
+        print('[INFO] Received mined block {}'.format(block.height))
 
 
 def mine_block(block: Block, address: str):
@@ -265,7 +286,8 @@ def send_misocoin(to_address: str, amount: int):
 def get_info():
     return {
         'height': len(global_blockchain),
-        'connections': len(global_nodes)
+        'connections': len(global_nodes),
+        'difficulty': global_difficulty
     }
 
 
@@ -333,7 +355,7 @@ def send_raw_tx(tx: str):
                 tx, global_best_block, global_txs, global_utxos
             )
 
-            print('txid: {} added to block {}'.format(
+            print('[INFO] txid {} added to block {}'.format(
                 tx.txid, global_best_block.height))
 
             # Broadcast transaction to connected nodes
@@ -382,32 +404,15 @@ def block_management():
         except:
             last_mined_time = genesis_epoch
 
-        # Auto adjust difficulty ever 10 blocks
-        # Should be around 300 seconds after 10 blocks
-        last_ten_blocks = []
-        for i in range(max(1, global_best_block.height - 10), global_best_block.height - 1):
-            if i in global_blockchain:
-                last_ten_blocks.append(global_blockchain[i])
-
-        if (len(global_blockchain) % 10 == 0):
-            lowest_timestamp = reduce(lambda x, y: min(
-                x, y.timestamp), last_ten_blocks, int(time.time()))
-            highest_timestamp = reduce(lambda x, y: max(
-                x, y.timestamp), last_ten_blocks, genesis_epoch)
-
-            if (highest_timestamp - lowest_timestamp < 300):
-                global_difficulty = min(global_difficulty + 1, 64)
-
-            if (highest_timestamp - lowest_timestamp < 300):
-                global_difficulty = max(global_difficulty - 1, 0)
-
         # Auto mine
         # if 30 seconds has passed since last mining
         if (time.time() - last_mined_time > 30):
             # Mine block
             mined_block = mine_block(global_best_block, account_address)
 
-            print('Block {} has been mined'.format(mined_block.height))
+            if (mined_block.coinbase.reward_address == account_address):
+                print('[SUCCESS] You found the nonce for block {}'.format(
+                    mined_block.height))
 
             # Broadcast block to nodes
             mined_block_str = json.dumps(mined_block.toJSON())
@@ -474,7 +479,7 @@ def sync_with_nodes():
                 pass
 
         # Syncs with that node
-        if longest_node is not None:            
+        if longest_node is not None:
             latest_block_dict: Dict = misocoin_cli(
                 'get_block', [best_height], **longest_node)
             latest_block: Block = Block.fromJSON(latest_block_dict)
@@ -487,7 +492,7 @@ def sync_with_nodes():
 
 def run_misocoin(host='localhost', port=4000, nodes=['localhost:4000'], **kwargs):
     t1 = threading.Thread(target=partial(
-        run_simple, threaded=True), args=(host, port, misocoin_app))
+        run_simple, threaded=True, request_handler=MisocoinRequestHandler), args=(host, port, misocoin_app))
     t1.daemon = True
     t1.start()
 
