@@ -1,5 +1,10 @@
 # misocoin
-Educational Bitcoin protocol reimplemented in Python
+Educational Bitcoin protocol reimplemented in Python 3.x
+
+## Installation
+```
+pip install -r requirements.txt
+```
 
 ## Basic usage
 ```
