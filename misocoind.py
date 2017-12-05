@@ -500,9 +500,9 @@ def run_misocoin(host='localhost', port=4000, nodes=['localhost:4000'], **kwargs
     t2.start()
 
     t3 = threading.Thread(target=block_management, args=())
-    t3.start()
+    t3.start()    
 
-    t1.join()
+    t1.join()    
     t2.join()
     t3.join()
 
@@ -525,7 +525,9 @@ if __name__ == '__main__':
         ':')[0], 'port': x.split(':')[1]}, global_nodes))
 
     # account private key
-    account_priv_key = config_kwargs.get('priv_key', account_priv_key)
-    account_address = get_address(get_pub_key(account_priv_key))
+    account_priv_key = config_kwargs.get('priv_key', get_new_priv_key())
+    account_address = get_address(get_pub_key(account_priv_key))    
+
+    print('** [Welcome] Your misocoin address is {}'.format(account_address))
 
     run_misocoin(**config_kwargs)
