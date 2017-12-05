@@ -9,48 +9,6 @@ from misocoin.struct import Block, Transaction, Vin, Vout, Coinbase
 from misocoin.hashing import sha256, get_hash
 
 
-def mine_block(block: Block, address: str, txs: Dict, utxos: Dict) -> Tuple[Block, Dict, Dict]:
-    '''
-    Mines a block and returns its mined hash
-    '''
-    _block = copy.deepcopy(block)
-    _txs = copy.deepcopy(txs)
-    _utxos = copy.deepcopy(utxos)
-
-    # Oh wow state mutation :(
-    # Too pleb to do this in a pure way
-    while True:
-        _block.nonce += 1
-
-        if _block.mined:
-            # Find fees in the block
-            fees = reduce(lambda x, y: x + get_fees(y, _utxos),
-                          _block.transactions, 0)
-            reward_amount = 15 + fees
-
-            # Reward miner who found the right nonce
-            # With 15 misocoin + fees in the block
-            coinbase = Coinbase(
-                _block.prev_block_hash, address, reward_amount
-            )            
-            _block.coinbase = coinbase
-
-            # Add coinbase to utxo and txs
-            # Coinbase's vout will only contain
-            # 1 item
-            _utxos[coinbase.txid] = {}
-            _utxos[coinbase.txid][0] = {
-                'address': address,
-                'amount': reward_amount,
-                'spent': None
-            }
-
-            _txs[coinbase.txid] = coinbase
-                          
-
-            return _block, _txs, _utxos
-
-
 def create_raw_tx(vins: List[Vin], vouts: List[Vout]) -> Transaction:
     '''
     Creates a new transaction object given
@@ -103,10 +61,10 @@ def get_fees(tx: Transaction, utxos: Dict) -> int:
             lambda x, y: x + utxos[y.txid][y.index]['amount'], tx.vins, 0)
         total_out = reduce(lambda x, y: x + y.amount, tx.vouts, 0)
         return (total_in - total_out)
-    
+
     except KeyError as e:
         raise Exception('invalid vin txid/index {}'.format(e))
-    
+
     except Exception as e:
         raise e
 
@@ -128,7 +86,7 @@ def add_tx_to_block(tx: Transaction,
         txs: Global dictionary of transactions (state of all txs)
         utxos: Global dictioanry of unspent transactions (contains
                 the state of unspent txs)
-    '''    
+    '''
     # Make copy of object
     _block = copy.deepcopy(block)
     _tx = copy.deepcopy(tx)

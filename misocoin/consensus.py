@@ -1,2 +1,0 @@
-# Consensus protocol
-

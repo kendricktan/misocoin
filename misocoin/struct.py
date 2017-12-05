@@ -25,13 +25,13 @@ class Vin:
         return json.dumps(self.toJSON())
 
     @classmethod
-    def fromJSON(cls, vin_json: Dict):        
+    def fromJSON(cls, vin_json: Dict):
         if 'txid' not in vin_json or 'index' not in vin_json:
             raise Exception('Vin missing txid/index, {}'.format(vin_json))
 
         vin = cls(vin_json['txid'], vin_json['index'])
-        vin.pub_key = getattr(vin_json, 'pub_key', None)
-        vin.signature = getattr(vin_json, 'signature', None)
+        vin.pub_key = vin_json.get('pub_key', None)
+        vin.signature = vin_json.get('signature', None)
 
         return vin
 
@@ -57,7 +57,7 @@ class Vout:
         return json.dumps(self.toJSON())
 
     @classmethod
-    def fromJSON(cls, vout_json: Dict):        
+    def fromJSON(cls, vout_json: Dict):
         if 'address' not in vout_json or 'amount' not in vout_json:
             raise Exception('Vout missing txid/index: {}'.format(vout_json))
 
@@ -144,7 +144,7 @@ class Transaction:
         pass
 
     @classmethod
-    def fromJSON(cls, tx_json: Dict):        
+    def fromJSON(cls, tx_json: Dict):
         if 'vins' not in tx_json or 'vouts' not in tx_json:
             raise Exception('Transaction missing inputs: {}'.format(tx_json))
 
@@ -222,13 +222,16 @@ class Block:
                 or 'height' not in block_json or 'difficulty' not in block_json \
                 or 'nonce' not in block_json or 'timestamp' not in block_json \
                 or 'coinbase' not in block_json or 'transactions' not in block_json:
-            raise Exception('Block missing inputs: {}'.format(block_json))        
+            raise Exception('Block missing inputs: {}'.format(block_json))
         coinbase = None
         transactions = list(
             map(Transaction.fromJSON, block_json['transactions']))
 
         if block_json['coinbase'] is not None:
-            coinbase = Coinbase.fromJSON(block_json['coinbase'])
+            coinbase = Coinbase.fromJSON(
+                {**block_json['coinbase'],
+                    'prev_block_hash': block_json['prev_block_hash']}
+            )
 
         block = cls(
             block_json['prev_block_hash'],
@@ -243,6 +246,7 @@ class Block:
 
     def toJSON(self):
         transactions = list(map(lambda x: x.toJSON(), self.transactions))
+        coinbase = None if self.coinbase == None else self.coinbase.toJSON()
         return {
             'block_hash': self.block_hash,
             'prev_block_hash': self.prev_block_hash,
@@ -250,6 +254,6 @@ class Block:
             'difficulty': self.difficulty,
             'nonce': self.nonce,
             'timestamp': self.timestamp,
-            'coinbase': self.coinbase.toJSON(),
+            'coinbase': coinbase,
             'transactions': transactions
         }

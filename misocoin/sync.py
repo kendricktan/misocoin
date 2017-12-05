@@ -1,11 +1,9 @@
-#! /usr/bin/env python
 import requests
 import json
-import sys
 
 
-def misocoin_client(m, args):
-    url = "http://localhost:4000/jsonrpc"
+def misocoin_cli(m, args, host='localhost', port=4000):
+    url = "http://{}:{}/jsonrpc".format(host, port)
     headers = {'content-type': 'application/json'}
 
     # Example echo method
@@ -18,12 +16,7 @@ def misocoin_client(m, args):
     response = requests.post(
         url, data=json.dumps(payload), headers=headers).json()
 
-    print(json.dumps(response['result']))
-
-
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print('Missing method')
-        exit(0)
-
-    misocoin_client(sys.argv[1], sys.argv[2:])
+    try:
+        return response['result']
+    except:
+        return response
