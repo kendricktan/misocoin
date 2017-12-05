@@ -1,12 +1,12 @@
 <h1><p align="center">Misocoin</p></h1>
 
 <p align="center">
-    <img src="https://i.imgur.com/LURNf2q.jpg"/>
+    <img width="326" height="326" alt="misocoin logo" src="https://i.imgur.com/LURNf2q.jpg" />
 </p>
 
 Misocoin is a _barebones_ bitcoin-like protocol implemented in Python 3.x. It was written as a challenge for myself to see if I could implement a bitcoin clone from scratch.
 
-This project doesn't follow the [full bitcoin-protocol](https://en.bitcoin.it/wiki/Protocol_documentation), but rather implements a barebones version that (with enough nodes) can still act as a trustless third party for storing and ensuring the integrety of arbitrary data.
+This project doesn't follow the [full bitcoin-protocol](https://en.bitcoin.it/wiki/Protocol_documentation), but rather implements a barebones version that (with enough nodes) can still act as a trust-less third party for storing and ensuring the integrity of arbitrary data.
 
 **WARNING: Misocoin is not production ready and should only be used as an educational tool.**
 
@@ -62,7 +62,7 @@ This project doesn't follow the [full bitcoin-protocol](https://en.bitcoin.it/wi
 ## Todo?
 
 - [ ] Automatically prunes chain in favor of a longer chain
-- [ ] Persistant storage for blockchain (currently all in memory)
+- [ ] Persistent storage for blockchain (currently all in memory)
 - [ ] Separate out tx and block logic to fit in a set amount of txs in a block
 - [ ] Nicer exception handling
 - [ ] Enforce functional paradigm
