@@ -57,8 +57,8 @@ Misocoin is a _barebones_ Bitcoin-like protocol implemented in Python 3.x. It wa
 
 ## Todo?
 
-- [] Nicer exception handling
-- [] Enforce functional paradigm
+- [ ] Nicer exception handling
+- [ ] Enforce functional paradigm
 
 ## FAQ
 
