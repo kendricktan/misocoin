@@ -520,7 +520,7 @@ if __name__ == '__main__':
     # mush it into the format we want
     global_nodes = config_kwargs.get('nodes', '').split(',')
     global_nodes = list(
-        filter(lambda x: (len(x) > 0 and ':' in x and x is not (global_host + ':' + global_port)), global_nodes))
+        filter(lambda x: (len(x) > 0 and ':' in x and x is not (global_host + ':' + str(global_port))), global_nodes))
     global_nodes = list(map(lambda x: {'host': x.split(
         ':')[0], 'port': x.split(':')[1]}, global_nodes))
 
