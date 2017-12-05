@@ -38,7 +38,7 @@ def sign_msg(msg: str, priv_key: str) -> str:
     with 'x'
     '''
     r, s = ecdsa.sign(msg, int(priv_key, 16))
-    return '{:x}'.format(r) + 'x' + '{:x}'.format(s)
+    return '{:x}x{:x}'.format(r, s)
 
 
 def pub_key_to_point(pub_key: str) -> Point:
