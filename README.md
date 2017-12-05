@@ -25,7 +25,7 @@ This project doesn't follow the [full bitcoin-protocol](https://en.bitcoin.it/wi
  * Running on http://localhost:4000/ (Press CTRL+C to quit)
 
 # To start it on localhost:4001 with a specific private key
-# ./misocoind.py -host=localhost -port=4001 -priv_key=<60c8cb60c21143fffdd682f399ef3baa4b67c56a1f83a274284cfe7c57e007ed>
+# ./misocoind.py -host=localhost -port=4001 -priv_key=60c8cb60c21143fffdd682f399ef3baa4b67c56a1f83a274284cfe7c57e007ed
 ```
 
 5. Once you have the daemon running, you can interact with the daemon it via the API
