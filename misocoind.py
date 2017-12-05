@@ -91,20 +91,20 @@ def add_to_blockchain(block: Block):
     """
     global global_best_block, global_txs, global_utxos
 
+    # If we don't have the prev block, get it from our nodes
+    if (block.height - 1) not in global_blockchain:        
+        for node in global_nodes:
+            try:
+                missing_block_dict: Dict = misocoin_cli(
+                    'get_block', [block.height - 1], **node)
+                missing_block: Block = Block.fromJSON(missing_block_dict)
+                add_to_blockchain(missing_block)
+                break
+            except:
+                pass
 
+    # Check block hashes
     if len(global_blockchain) > 0:
-        # If we don't have the block, get it from our nodes
-        if (block.height - 1) not in global_blockchain:
-            for node in global_nodes:
-                try:
-                    missing_block_dict: Dict = misocoin_cli(
-                        'get_block', [block.height - 1], **node)
-                    missing_block: Block = Block.fromJSON(missing_block_dict)
-                    add_to_blockchain(missing_block)
-                    break
-                except:
-                    pass
-
         # Check hashes
         if block.prev_block_hash != global_blockchain[block.height - 1].block_hash:
             raise Exception(
@@ -135,7 +135,7 @@ def add_to_blockchain(block: Block):
                 # Update utxos
                 global_best_block, global_txs, global_utxos = mutils.add_tx_to_block(
                     tx, global_best_block, global_txs, global_utxos
-                )    
+                )
 
         # Only ammend global_best_block if the block.height
         # is higher
@@ -152,7 +152,8 @@ def add_to_blockchain(block: Block):
         # Broadcast block
         for node in global_nodes:
             try:
-                misocoin_cli('receive_mined_block', [json.dumps(block.toJSON())], **node)
+                misocoin_cli('receive_mined_block', [
+                             json.dumps(block.toJSON())], **node)
             except:
                 pass
 
@@ -276,7 +277,7 @@ def get_best_block():
 @dispatcher.add_method
 def get_block(i: int):
     try:
-        return global_blockchain[i].toJSON()
+        return global_blockchain[int(i)].toJSON()
 
     except Exception as e:
         return {'error': str(e)}
@@ -338,7 +339,8 @@ def send_raw_tx(tx: str):
             # Broadcast transaction to connected nodes
             for node in global_nodes:
                 try:
-                    misocoin_cli('send_raw_tx', [json.dumps(tx.toJSON())], **node)
+                    misocoin_cli('send_raw_tx', [
+                                 json.dumps(tx.toJSON())], **node)
                 except Exception as e:
                     pass
 
@@ -354,7 +356,7 @@ def receive_mined_block(block_str: str):
 
     try:
         block: Block = Block.fromJSON(json.loads(block_str))
-        add_to_blockchain(block)        
+        add_to_blockchain(block)
         return {'success': True}
 
     except Exception as e:
@@ -435,54 +437,52 @@ def init_connection(host, port):
     return json.dumps(global_nodes)
 
 
-# def sync_with_nodes():
-#     '''
-#     Syncs blocks with node
-#     '''
-#     global global_nodes
+def sync_with_nodes():
+    '''
+    Syncs blocks with node
+    '''
+    global global_nodes
 
-#     # Init connection
-#     for node in global_nodes:
-#         try:
-#             misocoin_cli('init_connection', [global_host, global_port], **node)
-#         except:
-#             pass
+    # Init connection
+    for node in global_nodes:
+        try:
+            misocoin_cli('init_connection', [global_host, global_port], **node)
+        except:
+            pass
 
-#     # Checks every 15 seconds
-#     while True:
-#         # Checks with nodes, syncs with the one with
-#         # the longest chain
-#         longest_node = None
-#         best_height = len(global_blockchain)
+    # Checks every 15 seconds
+    while True:
+        # Checks with nodes, syncs with the one with
+        # the longest chain
+        longest_node = None
+        best_height = len(global_blockchain)
 
-#         for node in global_nodes:
-#             # If node['host'] is in black list then continue
-#             if node['host'] in global_blacklisted_nodes:
-#                 continue
+        for node in global_nodes:
+            # If node['host'] is in black list then continue
+            if node['host'] in global_blacklisted_nodes:
+                continue
 
-#             try:
-#                 node_best_length = misocoin_cli(
-#                     'get_info', [], **node)['height']
+            try:
+                node_best_length = misocoin_cli(
+                    'get_info', [], **node)['height']
 
-#                 if node_best_length > best_height:
-#                     longest_node = node
-#                     best_height = node_best_length
+                if node_best_length > best_height:
+                    longest_node = node
+                    best_height = node_best_length
 
-#             except:
-#                 pass
+            except:
+                pass
 
-#         # Syncs with that node
-#         if longest_node is not None:
-#             for i in range(len(global_blockchain) + 1, best_height + 1):
-#                 latest_block_dict: Dict = misocoin_cli(
-#                     'get_block', [i], **longest_node)
-#                 latest_block: Block = Block.fromJSON(latest_block_dict)
+        # Syncs with that node
+        if longest_node is not None:            
+            latest_block_dict: Dict = misocoin_cli(
+                'get_block', [best_height], **longest_node)
+            latest_block: Block = Block.fromJSON(latest_block_dict)
 
-#                 # Append to latest blockchain
-#                 add_to_blockchain(latest_block)
-#                 print('Synced block {}'.format(latest_block.height))
+            # Append to latest blockchain
+            add_to_blockchain(latest_block)
 
-#         time.sleep(10)
+        time.sleep(10)
 
 
 def run_misocoin(host='localhost', port=4000, nodes=['localhost:4000'], **kwargs):
@@ -491,14 +491,14 @@ def run_misocoin(host='localhost', port=4000, nodes=['localhost:4000'], **kwargs
     t1.daemon = True
     t1.start()
 
-    # t2 = threading.Thread(target=sync_with_nodes, args=())
-    # t2.start()
+    t2 = threading.Thread(target=sync_with_nodes, args=())
+    t2.start()
 
     t3 = threading.Thread(target=block_management, args=())
     t3.start()
 
     t1.join()
-    # t2.join()
+    t2.join()
     t3.join()
 
 
