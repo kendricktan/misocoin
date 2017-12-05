@@ -52,7 +52,7 @@ This project doesn't follow the [full bitcoin-protocol](https://en.bitcoin.it/wi
 ./misocoind.py -port=4002 -nodes=localhost:4001
 ```
 
-## What in misocoin
+## What's in misocoin
 
 - [x] EDCSA
 - [x] Dynamic difficulty (based on network hashing power)
