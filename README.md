@@ -8,7 +8,7 @@ pip install -r requirements.txt
 
 ## Basic usage
 ```
-./miscoind.py -host=<localhost> -port=<4000> -priv_key=<60c8cb60c21143fffdd682f399ef3baa4b67c56a1f83a274284cfe7c57e007ed>
+./misocoind.py -host=<localhost> -port=<4000> -priv_key=<60c8cb60c21143fffdd682f399ef3baa4b67c56a1f83a274284cfe7c57e007ed>
 ```
 
 ## Basic API
@@ -26,7 +26,7 @@ pip install -r requirements.txt
 
 Terminal 1:
 ```
-./miscoind.py -port=4001 -priv_key=60c8cb60c21143fffdd682f399ef3baa4b67c56a1f83a274284cfe7c57e007ed
+./misocoind.py -port=4001 -priv_key=60c8cb60c21143fffdd682f399ef3baa4b67c56a1f83a274284cfe7c57e007ed
 ```
 
 Terminal 2:
