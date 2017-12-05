@@ -1,3 +1,4 @@
-fastecdsa===1.4.3
+fastecdsa==1.4.3
 json-rpc==1.10.8
+requests==2.18.4
 Werkzeug==0.12.2
