@@ -82,6 +82,6 @@ I made it to understand more about bitcoin. Jks. I made it for Miso's birthday (
 Sure
 
 <p align="center">
-    <img width="434" height="326" alt="misocoin logo" src="https://i.imgur.com/zkCnKar.jpg" />
+    <img width="434" height="326" alt="misocoin logo" src="https://i.imgur.com/l7e4wvk.jpg" />
 </p>
 
