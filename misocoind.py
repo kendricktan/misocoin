@@ -243,9 +243,12 @@ def send_misocoin(to_address: str, amount: int):
     try:
         accumulated_amount = 0
         send_amount = int(amount)
-
         vins: List[Vin] = []
         vouts: List[Vout] = [Vout(to_address, send_amount)]
+
+        # Check that the to_address is valid sha1 hash
+        if len(to_address.encode('utf-8')) != 40: # hex lenght of sha1 hash
+            return {'error': 'The destination address is not valid'}
 
         # Construct vins and vouts
         for txid in global_utxos:
