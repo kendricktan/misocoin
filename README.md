@@ -72,3 +72,16 @@ This project doesn't follow the [full bitcoin-protocol](https://en.bitcoin.it/wi
 - Who's miso?
 
 Miso is my cat. You can find out about him more on [his instagram page](http://instagram.com/mr.miso.oz/).
+
+- Why did you make this?
+
+I made it to understand more about bitcoin. Jks. I made it for Miso's birthday (15 December). I love my cat.
+
+- Can I have a picture of your cat in a taco outfit?
+
+Sure
+
+<p align="center">
+    <img width="434" height="326" alt="misocoin logo" src="https://i.imgur.com/zkCnKar.jpg" />
+</p>
+
